@@ -1,0 +1,8 @@
+google-cloud-bigtable 
+google-cloud-core 
+google-api-python-client 
+bs4 
+lxml
+google-auth 
+google-auth-httplib2 
+google-api-python-client 
