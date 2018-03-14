@@ -7,7 +7,7 @@ import gzip
 import multiprocessing
 import json
 from google.cloud import bigtable
-
+import hashlib
 
 def gunzip_bytes_obj(bytes_obj):
     in_ = io.BytesIO()
@@ -77,8 +77,8 @@ def acknowledge(message, subscription_path):
 # BigTable initialization
 project_id                = 'orion-175415'
 instance_id               = 'webref-ssd'
-table_id                  = 'dailymotion-catalog'
-video_column_family_id    = 'videos'
+table_id                  = 'catalogs'
+product_column_family_id  = 'product'
 
 client = bigtable.Client(project=project_id, admin=True)
 instance = client.instance(instance_id)
@@ -105,16 +105,31 @@ def maybe_create_db():
 
 def write_video(data):
     
-    key  = data['id'].encode('utf-8')
+    p={}
+    p['merchant']     = 'Dailymotion'
+    p['domain']       = 'www.dailymotion.com'
+    p['page_type']    = 'product_page'
+    p['product_id']   = data['id']
+    p['product_name'] = data['title']
+    p['product_url']  = data['url']
+    p['category_id']   = data['owner.id']
+    p['category_name'] = data['owner.screenname']
+    p['category_url']  = "https://www.dailymotion.com/" + data['owner.username']
+    p['category_path'] = data['owner.screenname']
+    p['category_id_trail'] = json.dumps([data['owner.id']])
+    p['category_name_trail'] = json.dumps([data['owner.screenname']])
+    p['category_href_trail'] = json.dumps(["https://www.dailymotion.com/" + data['owner.username']])
+    p['product_json'] = json.dumps(data
+                                  )
+    key  = (p['merchant']+'-'+p['product_id']).encode('utf-8')
+    key  = hashlib.sha1(key).hexdigest().encode('utf-8')
     
     row = table.row(key)
-    for key, value in data.items():
-        print("%s, %s, %s" % (key, value, type(value)))
-        if value is not None:
-            if type(value)==str: value = value.encode('utf-8')
-            if type(value)==list: value = (','.join(value)).encode('utf-8')
-            row.set_cell(video_column_family_id.encode('utf-8'), # column_family
-                         key.encode('utf-8'),                         # column
-                         value #.encode('utf-8')        # value
-                        )
+    for k in p.keys():
+        row.set_cell(product_column_family_id.encode('utf-8'), # column_family
+                     k.encode('utf-8'),                             # column
+                     p[k].encode('utf-8')                           # value
+                    )       
+
     row.commit()
+    
