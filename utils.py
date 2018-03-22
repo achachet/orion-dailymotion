@@ -38,8 +38,8 @@ from base64 import b64decode, b64encode
 
 
 project_name      = 'orion-175415'
-topic_name        = 'catalogs-dailymotion-items'
-subscription_name = 'catalogs-dailymotion-items'
+topic_name        = 'catalogs'
+subscription_name = 'catalogs'
 subscriber        = pubsub_v1.SubscriberClient()
 publisher         = pubsub_v1.PublisherClient()
 topic_path        = subscriber.topic_path(project_name, topic_name)
